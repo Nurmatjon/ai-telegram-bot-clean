@@ -1,0 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan  1 18:52:27 2026
+
+@author: User
+"""
+
+.env
+__pycache__/
+venv/
