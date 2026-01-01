@@ -10,8 +10,8 @@ from openai import OpenAI
 # =====================
 # ENVIRONMENT VARIABLES
 # =====================
-BOT_TOKEN = os.ENVIRON["BOT_TOKEN"]
-OPENAI_API_KEY = os.ENVIRON["OPENAI_API_KEY"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN topilmadi (Railway Variables)")
