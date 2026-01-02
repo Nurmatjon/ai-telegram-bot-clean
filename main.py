@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler
 from scheduler import post_job
 from datetime import time
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO,format="%(asctime)s - %(levelname)s -%(message)s")
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 
