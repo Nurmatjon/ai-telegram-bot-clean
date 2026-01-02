@@ -56,7 +56,7 @@ def main():
     app.add_handler(CommandHandler("test_post", test_post))
 
     # ⏰ Scheduler
-    setup_scheduler(app.bot)
+    setup_scheduler(app)
     logger.info("⏰ Scheduler ulandi")
 
     logger.info("🔁 Polling boshlandi")
