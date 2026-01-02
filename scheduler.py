@@ -116,4 +116,4 @@ def setup_scheduler(application):
         name="daily_post"
     )
 
-    logger.info("⏰ JobQueue scheduler ulandi")
+    logger.info("⏰  JobQueue scheduler ulandi")
