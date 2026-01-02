@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from telegram import (
     Update,
@@ -12,7 +13,12 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from scheduler import setup_scheduler, post_job, load_state, save_state
+from scheduler import (
+    setup_scheduler,
+    post_job,
+    load_state,
+    save_state,
+)
 
 # ================= LOGGING =================
 logging.basicConfig(
@@ -25,8 +31,10 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
+SCHEDULE_FILE = "data/schedule.json"
+
 if not BOT_TOKEN:
-    raise RuntimeError("❌ BOT_TOKEN topilmadi")
+    raise RuntimeError("❌ BOT_TOKEN topilmadi (Railway Variables tekshiring)")
 
 # ================= ADMIN KEYBOARD =================
 def admin_keyboard():
@@ -43,6 +51,7 @@ def admin_keyboard():
             InlineKeyboardButton("▶️ Yoqish", callback_data="resume"),
         ],
         [
+            InlineKeyboardButton("⏰ Vaqtni o‘zgartirish", callback_data="set_time"),
             InlineKeyboardButton("📊 Holat", callback_data="status"),
         ]
     ])
@@ -70,25 +79,75 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     state = load_state()
 
+    # 🔹 Qo‘lda post chiqarish
     if data.startswith("post_"):
         post_type = data.replace("post_", "")
         await query.message.reply_text(f"📤 {post_type} posti yuborilmoqda...")
         context.job.data = post_type
         await post_job(context)
 
+    # 🔹 Avto postni to‘xtatish
     elif data == "pause":
         state["enabled"] = False
         save_state(state)
         await query.message.reply_text("⏸ Avto postlar o‘chirildi")
 
+    # 🔹 Avto postni yoqish
     elif data == "resume":
         state["enabled"] = True
         save_state(state)
         await query.message.reply_text("▶️ Avto postlar yoqildi")
 
+    # 🔹 Holat
     elif data == "status":
         status = "YOQILGAN ✅" if state.get("enabled", True) else "O‘CHIQ ⛔"
         await query.message.reply_text(f"📊 Avto post holati: {status}")
+
+    # 🔹 Vaqtni o‘zgartirish yo‘riqnomasi
+    elif data == "set_time":
+        await query.message.reply_text(
+            "⏰ Post vaqtini o‘zgartirish:\n\n"
+            "/set_time money 09:00\n"
+            "/set_time skill 16:00\n"
+            "/set_time motivation 21:00\n\n"
+            "⚠️ So‘ng Railway → Restart qiling"
+        )
+
+# ================= SET TIME COMMAND =================
+async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
+
+    try:
+        post_type = context.args[0]
+        new_time = context.args[1]
+        h, m = map(int, new_time.split(":"))
+        if post_type not in ("money", "skill", "motivation"):
+            raise ValueError
+    except:
+        await update.message.reply_text(
+            "❌ Noto‘g‘ri format.\n\n"
+            "To‘g‘ri ko‘rinish:\n"
+            "/set_time skill 16:30"
+        )
+        return
+
+    data = {}
+    if os.path.exists(SCHEDULE_FILE):
+        with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+    data[post_type] = new_time
+    os.makedirs("data", exist_ok=True)
+
+    with open(SCHEDULE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    await update.message.reply_text(
+        f"✅ `{post_type}` posti vaqti `{new_time}` ga o‘zgartirildi.\n"
+        f"🔁 Railway → Restart qiling",
+        parse_mode="Markdown"
+    )
 
 # ================= MAIN =================
 def main():
@@ -98,6 +157,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
+    app.add_handler(CommandHandler("set_time", set_time))
     app.add_handler(CallbackQueryHandler(admin_callback))
 
     setup_scheduler(app)
