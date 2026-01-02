@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 import json
 import os
 import asyncio
@@ -99,8 +100,11 @@ async def scheduler_loop(bot):
         try:
             logger.info("⏳ Scheduler tirik (30s tekshiruv)")
 
-            now = datetime.now().strftime("%H:%M")
-            today = datetime.now().strftime("%Y-%m-%d")
+            tz = ZoneInfo("Asia/Tashkent")
+            now_dt = datetime.now(tz)
+            now = now_dt.strftime("%H:%M")
+            today = now_dt.strftime("%Y-%m-%d")
+
 
             schedule = load_schedule()
             state = load_state()
