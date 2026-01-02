@@ -112,7 +112,7 @@ def setup_scheduler(application):
 
     jq.run_daily(
         post_job,
-        time=time(hour=11, minute=40),  # ⏰ shu yerda vaqt
+        time=time(hour=13, minute=10),  # ⏰ shu yerda vaqt
         name="daily_post"
     )
 
