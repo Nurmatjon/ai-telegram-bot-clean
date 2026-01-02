@@ -99,7 +99,7 @@ def setup_scheduler(application):
 
     jq.run_daily(
         post_job,
-        time=time(hour=15, minute=20),
+        time=time(hour=15, minute=0),
         data="skill",
         name="post_15"
     )
