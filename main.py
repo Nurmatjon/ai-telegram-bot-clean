@@ -19,12 +19,12 @@ def main():
     # ✅ TO‘G‘RI CRON — PTB JobQueue
     app.job_queue.run_daily(
         post_job,
-        time=time(hour=12, minute=17),          # ⏰ 12:17
+        time=time(hour=12, minute=25),          # ⏰ 12:25
         days=(0,1,2,3,4,5,6),
         name="daily_post"
     )
 
-    logging.info("🚀 Bot started with PTB JobQueue (12:17)")
+    logging.info("🚀 Bot started with PTB JobQueue (12:25)")
 
     app.run_polling()
 
