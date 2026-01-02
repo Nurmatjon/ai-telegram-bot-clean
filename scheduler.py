@@ -35,12 +35,36 @@ def detect_post_type(hour: int) -> str:
         return "motivation"
     return "money"  # fallback
 
-# ================= FORMAT =================
-def bold_title(text: str) -> str:
+# ================= MATNNI FORMATLASH =================
+def format_post_text(text: str) -> str:
+    """
+    Qoidalar:
+    - Asosiy sarlavha qalin
+    - #### o‘rniga ! ishlatiladi
+    - ! dan keyingi sarlavha qalin
+    - Har abzatsdan keyin 1 bo‘sh qator
+    """
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return text
-    return f"*{lines[0]}*\n\n" + "\n".join(lines[1:])
+
+    formatted = []
+
+    # 1️⃣ Asosiy sarlavha
+    formatted.append(f"*{lines[0]}*")
+    formatted.append("")
+
+    for line in lines[1:]:
+        # #### -> ! va qalin sarlavha
+        if line.startswith("####"):
+            title = line.replace("####", "").strip()
+            formatted.append(f"! *{title}*")
+            formatted.append("")
+        else:
+            formatted.append(line)
+            formatted.append("")
+
+    return "\n".join(formatted).strip()
 
 def limit_text(text: str, limit: int = 3500) -> str:
     if len(text) <= limit:
@@ -62,9 +86,9 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
     index = state.get("day", 0)
 
     topic = get_topic(index)
-    post = generate_post(topic, post_type=post_type)
+    raw_post = generate_post(topic, post_type=post_type)
 
-    post = bold_title(post)
+    post = format_post_text(raw_post)
     post = limit_text(post)
 
     await bot.send_message(
