@@ -2,6 +2,7 @@ import os
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler
 from scheduler import post_job
+from datetime import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,12 +19,12 @@ def main():
     # ✅ TO‘G‘RI CRON — PTB JobQueue
     app.job_queue.run_daily(
         post_job,
-        time=(11, 55),          # ⏰ 11:55
+        time=time(hour=12, minute=00),          # ⏰ 11:55
         days=(0,1,2,3,4,5,6),
         name="daily_post"
     )
 
-    logging.info("🚀 Bot started with PTB JobQueue (11:55)")
+    logging.info("🚀 Bot started with PTB JobQueue (12:00)")
 
     app.run_polling()
 
