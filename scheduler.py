@@ -136,11 +136,11 @@ async def post_job(bot: Bot):
 def setup_scheduler(bot: Bot):
     scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
 
-    # ✅ HAR KUNI SOAT 09:00 DA
+    # ✅ HAR KUNI SOAT 11:00 DA
     scheduler.add_job(
         post_job,
         trigger="cron",
-        hour=9,
+        hour=11,
         minute=0,
         args=[bot]
     )
