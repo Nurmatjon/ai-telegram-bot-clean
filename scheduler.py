@@ -75,7 +75,10 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
 
 # ================= JOB QUEUE =================
 def setup_scheduler(application):
+    
     jq = application.job_queue
+    jq.run_once(post_job, when=30)
+
 
     jq.run_daily(
         post_job,
