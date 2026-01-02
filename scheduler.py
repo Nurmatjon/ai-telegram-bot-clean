@@ -16,7 +16,7 @@ STATE_FILE = "data/state.json"
 # ================= STATE =================
 def load_state():
     if not os.path.exists(STATE_FILE):
-        return {"day": 0}
+        return {"day": 0, "enabled": True}
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -28,7 +28,6 @@ def save_state(state):
 # ================= FORMAT =================
 def format_post_text(text: str) -> str:
     """
-    Qoidalar:
     - Asosiy sarlavha qalin
     - #### -> !
     - ! dan keyingi sarlavha qalin
@@ -39,8 +38,6 @@ def format_post_text(text: str) -> str:
         return text
 
     formatted = []
-
-    # Asosiy sarlavha
     formatted.append(f"*{lines[0]}*")
     formatted.append("")
 
@@ -65,14 +62,17 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
     post_type = context.job.data  # money / skill / motivation
 
+    state = load_state()
+    if not state.get("enabled", True):
+        logger.info("⏸ Avto postlar o‘chiq")
+        return
+
     logger.info(f"🕘 Post turi: {post_type}")
 
-    state = load_state()
     index = state.get("day", 0)
-
     topic = get_topic(index)
-    raw_post = generate_post(topic, post_type=post_type)
 
+    raw_post = generate_post(topic, post_type=post_type)
     post = format_post_text(raw_post)
     post = limit_text(post)
 
@@ -85,7 +85,7 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
     state["day"] = index + 1
     save_state(state)
 
-    logger.info("✅ Matnli post yuborildi")
+    logger.info("✅ Post yuborildi")
 
 # ================= JOB QUEUE =================
 def setup_scheduler(application):
@@ -112,4 +112,4 @@ def setup_scheduler(application):
         name="post_20"
     )
 
-    logger.info("⏰ JobQueue scheduler ulandi (08:00 / 15:00 / 20:00)")
+    logger.info("⏰ Scheduler ulandi (08:00 / 15:00 / 20:00)")
