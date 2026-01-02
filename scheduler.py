@@ -27,11 +27,19 @@ def save_state(state):
 
 # ================= FORMAT =================
 def format_post_text(text: str) -> str:
+    """
+    - Asosiy sarlavha qalin
+    - #### -> !
+    - ! dan keyingi sarlavha qalin
+    - Har abzatsdan keyin 1 bo‘sh qator
+    """
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return text
 
     formatted = []
+
+    # Asosiy sarlavha
     formatted.append(f"*{lines[0]}*")
     formatted.append("")
 
@@ -54,7 +62,7 @@ def limit_text(text: str, limit: int = 3500) -> str:
 # ================= POST JOB =================
 async def post_job(context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
-    post_type = context.job.data  # 🔥 ENG MUHIM JOY
+    post_type = context.job.data  # money / skill / motivation
 
     logger.info(f"🕘 Post turi: {post_type}")
 
@@ -81,7 +89,6 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
 # ================= JOB QUEUE =================
 def setup_scheduler(application):
     jq = application.job_queue
-    jq.run_once(post_job, when=30)
 
     jq.run_daily(
         post_job,
@@ -92,7 +99,7 @@ def setup_scheduler(application):
 
     jq.run_daily(
         post_job,
-        time=time(hour=15, minute=0),
+        time=time(hour=15, minute=20),
         data="skill",
         name="post_15"
     )
@@ -104,4 +111,4 @@ def setup_scheduler(application):
         name="post_20"
     )
 
-    logger.info("⏰ JobQueue scheduler ulandi (08 / 15 / 20)")
+    logger.info("⏰ JobQueue scheduler ulandi (08:00 / 15:00 / 20:00)")

@@ -19,13 +19,13 @@ Majburiy tarkib:
 1. Aniq pul topish yo‘li (real bo‘lsin)
 2. Bu yo‘l KIMLAR uchun mos
 3. Qanday xizmat yoki ish bajariladi
-4. Qancha daromad qilish mumkin (oyiga oraliq bilan)
+4. Qancha daromad qilish mumkin (oyiga taxminiy oraliq bilan)
 5. Boshlash uchun 1-VA-ENG MUHIM qadam
 
 Talablar:
 - Motivatsion shiorlar yo‘q
 - Amaliy va aniq yoz
-- 6–8 jumla
+- 6–8 qisqa jumla
 - Oxirida savol: “Siz shu yo‘lni sinab ko‘rganmisiz?”
 """
 
@@ -46,11 +46,11 @@ Majburiy tarkib:
 3. 0 dan boshlash uchun 3 bosqich (1 → 2 → 3)
 4. O‘rganilishi kerak bo‘lgan ENG MUHIM ko‘nikma
 5. O‘rganish uchun YOUTUBE’dagi O‘ZBEK TILIDAGI darslar:
-   - 1–2 ta o‘zbekcha YouTube kanal yoki dars mavzusi
-   - Kanal yoki video nomi aniq yozilsin
+   - 1–2 ta o‘zbekcha YouTube kanal YOKI
+   - qidirish uchun aniq video mavzusi
 6. Qo‘shimcha o‘rganish uchun:
-   - 1 ta kitob YOKI bepul resurs
-7. 3–6 oyda qanday natijaga chiqish mumkin
+   - 1 ta kitob YOKI bepul onlayn resurs
+7. 3–6 oyda qanday natijaga chiqish mumkin (real baho)
 
 Talablar:
 - Umumiy gaplar yo‘q
@@ -74,7 +74,7 @@ Majburiy tarkib:
 1. Inson kim bo‘lgan (oldin)
 2. Qanday qiyinchilik bo‘lgan
 3. Qaysi BITTA qaror burilish yasagan
-4. Hozirgi holati (natija)
+4. Hozirgi holati (qanday natijaga chiqqan)
 5. O‘quvchi uchun xulosa
 
 Talablar:
@@ -85,7 +85,7 @@ Talablar:
 """
 
 # =====================================================
-# ASOSIY GENERATOR — VAQTGA QARAB TANLAYDI
+# ASOSIY GENERATOR — POST TURIGA QARAB
 # =====================================================
 def generate_post(topic: str, post_type: str) -> str:
     if post_type == "money":
@@ -95,12 +95,12 @@ def generate_post(topic: str, post_type: str) -> str:
     elif post_type == "motivation":
         prompt = prompt_motivation(topic)
     else:
-        raise ValueError("Noto‘g‘ri post_type")
+        raise ValueError(f"Noto‘g‘ri post_type: {post_type}")
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.6
+        temperature=0.6,
     )
 
     return response.choices[0].message.content.strip()
