@@ -1,5 +1,3 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 import logging
 import json
 import os
@@ -32,8 +30,9 @@ def bold_title(text: str) -> str:
         return text
     return f"*{lines[0]}*\n\n" + "\n".join(lines[1:])
 
-async def post_job(bot: Bot):
-    logger.info("⏰ POST JOB STARTED")
+async def post_job(context):
+    bot: Bot = context.bot
+    logger.info("⏰ DAILY POST JOB STARTED")
 
     state = load_state()
     day = state["day"]
@@ -73,18 +72,4 @@ async def post_job(bot: Bot):
     state["day"] = day + 1
     save_state(state)
 
-    logger.info("✅ POST SENT SUCCESSFULLY")
-
-def setup_scheduler(bot: Bot):
-    scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
-
-    scheduler.add_job(
-        post_job,
-        CronTrigger(hour=11, minute=40),
-        args=[bot],
-        id="daily_post",
-        replace_existing=True
-    )
-
-    scheduler.start()
-    logger.info("🚀 Scheduler started (11:40)")
+    logger.info("✅ DAILY POST SENT")
