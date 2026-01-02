@@ -84,10 +84,21 @@ async def send_post(bot, post_type: str):
 
 # ================= MAIN LOOP =================
 async def scheduler_loop(bot):
-    logger.info("⏰ Custom scheduler ishga tushdi")
+    logger.info("🟢 SCHEDULER LOOP STARTED")
+
+    # 🔥 ISBOT UCHUN — ISHGA TUSHGANDA XABAR
+    try:
+        await bot.send_message(
+            chat_id=CHANNEL_ID,
+            text="🧪 Scheduler ishga tushdi (TEST XABAR)"
+        )
+    except Exception as e:
+        logger.error(f"Scheduler test xabar xatosi: {e}")
 
     while True:
         try:
+            logger.info("⏳ Scheduler tirik (30s tekshiruv)")
+
             now = datetime.now().strftime("%H:%M")
             today = datetime.now().strftime("%Y-%m-%d")
 
@@ -102,4 +113,4 @@ async def scheduler_loop(bot):
         except Exception as e:
             logger.error(f"SCHEDULER ERROR: {e}")
 
-        await asyncio.sleep(30)  # har 30 soniyada tekshiradi
+        await asyncio.sleep(30)
