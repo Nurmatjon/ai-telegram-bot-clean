@@ -28,6 +28,7 @@ def save_state(state):
 # ================= FORMAT =================
 def format_post_text(text: str) -> str:
     """
+    Qoidalar:
     - Asosiy sarlavha qalin
     - #### -> !
     - ! dan keyingi sarlavha qalin
