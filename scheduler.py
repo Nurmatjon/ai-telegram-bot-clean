@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from datetime import time, datetime
+from datetime import time
 from telegram.ext import ContextTypes
 
 from ai_engine import generate_post
@@ -25,37 +25,17 @@ def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
-# ================= POST TYPE ANIQLASH =================
-def detect_post_type(hour: int) -> str:
-    if hour == 8:
-        return "money"
-    if hour == 15:
-        return "skill"
-    if hour == 20:
-        return "motivation"
-    return "money"  # fallback
-
-# ================= MATNNI FORMATLASH =================
+# ================= FORMAT =================
 def format_post_text(text: str) -> str:
-    """
-    Qoidalar:
-    - Asosiy sarlavha qalin
-    - #### o‘rniga ! ishlatiladi
-    - ! dan keyingi sarlavha qalin
-    - Har abzatsdan keyin 1 bo‘sh qator
-    """
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return text
 
     formatted = []
-
-    # 1️⃣ Asosiy sarlavha
     formatted.append(f"*{lines[0]}*")
     formatted.append("")
 
     for line in lines[1:]:
-        # #### -> ! va qalin sarlavha
         if line.startswith("####"):
             title = line.replace("####", "").strip()
             formatted.append(f"! *{title}*")
@@ -74,13 +54,9 @@ def limit_text(text: str, limit: int = 3500) -> str:
 # ================= POST JOB =================
 async def post_job(context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
+    post_type = context.job.data  # 🔥 ENG MUHIM JOY
 
-    # ⏰ HOZIRGI VAQT (Railway TZ bilan)
-    now = datetime.now()
-    hour = now.hour
-
-    post_type = detect_post_type(hour)
-    logger.info(f"🕘 Post turi: {post_type} ({hour}:00)")
+    logger.info(f"🕘 Post turi: {post_type}")
 
     state = load_state()
     index = state.get("day", 0)
@@ -97,7 +73,6 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-    # 🔁 HAR POSTDA KEYINGI MAVZU
     state["day"] = index + 1
     save_state(state)
 
@@ -106,24 +81,27 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
 # ================= JOB QUEUE =================
 def setup_scheduler(application):
     jq = application.job_queue
+    jq.run_once(post_job, when=30)
 
-    # 🟢 KUNIGA 3 MARTA
     jq.run_daily(
         post_job,
         time=time(hour=8, minute=0),
+        data="money",
         name="post_08"
     )
 
     jq.run_daily(
         post_job,
         time=time(hour=15, minute=0),
+        data="skill",
         name="post_15"
     )
 
     jq.run_daily(
         post_job,
         time=time(hour=20, minute=0),
+        data="motivation",
         name="post_20"
     )
 
-    logger.info("⏰ JobQueue scheduler ulandi (08:00 / 15:00 / 20:00)")
+    logger.info("⏰ JobQueue scheduler ulandi (08 / 15 / 20)")
