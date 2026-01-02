@@ -80,11 +80,11 @@ def setup_scheduler(bot: Bot):
 
     scheduler.add_job(
         post_job,
-        CronTrigger(hour=11, minute=35),
+        CronTrigger(hour=11, minute=40),
         args=[bot],
         id="daily_post",
         replace_existing=True
     )
 
     scheduler.start()
-    logger.info("🚀 Scheduler started (11:00)")
+    logger.info("🚀 Scheduler started (11:40)")

@@ -42,7 +42,7 @@ def main():
 
     # ⏰ SCHEDULERNI ISHGA TUSHIRISH (ENG MUHIM JOY)
     setup_scheduler(app.bot)
-    logger.info("⏰ Scheduler ulandi (har kuni 11:35)")
+    logger.info("⏰ Scheduler ulandi (har kuni 11:40)")
 
     # 🔁 Polling (Railway uchun to‘g‘ri)
     logger.info("🔁 Polling boshlandi")
