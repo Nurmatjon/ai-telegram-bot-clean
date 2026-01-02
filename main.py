@@ -1,32 +1,67 @@
 import os
 import logging
-from telegram.ext import ApplicationBuilder, CommandHandler
-from scheduler import post_job
-from datetime import time
+from telegram import Update
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
-logging.basicConfig(level=logging.INFO,format="%(asctime)s - %(levelname)s -%(message)s")
+from scheduler import setup_scheduler, post_job
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
+# =====================================================
+# LOGGING — Railway uchun MAJBURIY
+# =====================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-async def start(update, context):
-    await update.message.reply_text("👋 Bot ishlayapti.")
+print("🔥 main.py LOADED")
 
+# =====================================================
+# BOT TOKEN
+# =====================================================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    raise RuntimeError("❌ BOT_TOKEN topilmadi (Railway Variables tekshiring)")
+
+# =====================================================
+# /start
+# =====================================================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("/start bosildi")
+    await update.message.reply_text("👋 Bot ishlayapti (DEBUG MODE)")
+
+# =====================================================
+# /test_post — qo‘lda post chiqarish (ENG MUHIM)
+# =====================================================
+async def test_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info("🧪 TEST POST qo‘lda ishga tushdi")
+    await update.message.reply_text("🧪 Test post yuborilmoqda...")
+    await post_job(context.bot)
+    await update.message.reply_text("✅ Test post tugadi")
+
+# =====================================================
+# MAIN
+# =====================================================
 def main():
+    logger.info("🚀 BOT ISHGA TUSHYAPTI")
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("test_post", test_post))
 
-    # ✅ TO‘G‘RI CRON — PTB JobQueue
-    app.job_queue.run_daily(
-        post_job,
-        time=time(hour=12, minute=25),          # ⏰ 12:25
-        days=(0,1,2,3,4,5,6),
-        name="daily_post"
-    )
+    # ⏰ Scheduler
+    setup_scheduler(app.bot)
+    logger.info("⏰ Scheduler ulandi")
 
-    logging.info("🚀 Bot started with PTB JobQueue (12:25)")
+    logger.info("🔁 Polling boshlandi")
+    app.run_polling(drop_pending_updates=True)
 
-    app.run_polling()
-
+# =====================================================
 if __name__ == "__main__":
     main()
