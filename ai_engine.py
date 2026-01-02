@@ -1,72 +1,101 @@
-import os
 from openai import OpenAI
+from config import OPENAI_API_KEY
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # =====================================================
-# 1️⃣ ASOSIY POST GENERATOR
+# 08:00 — PUL TOPISH PROMPTI
 # =====================================================
-def generate_post(topic: str) -> str:
-    prompt = f"""
+def prompt_money(topic: str) -> str:
+    return f"""
 Sof o‘zbek tilida yoz.
+
 Mavzu: {topic}
 
-Bu oddiy motivatsion post bo‘lmasin.
+Bu post pul topish haqida bo‘lsin.
+Umumiy gaplar qat’iyan bo‘lmasin.
 
-Majburiy talablar:
-1) Real pul topish yo‘li yoki real kasb haqida yoz
-2) Kimlar uchun mosligini ayt
-3) Qanday bosqichlarda o‘rganilishini yoz
-4) Shu yo‘lda muvaffaqiyatga erishgan REAL shaxs yoki kasb egasi misolini keltir
-5) 1–2 ta kitob yoki manba tavsiya qil
-6) Oxirida aniq savol yoki topshiriq ber
+Majburiy tarkib:
+1. Aniq pul topish yo‘li (real bo‘lsin)
+2. Bu yo‘l KIMLAR uchun mos
+3. Qanday xizmat yoki ish bajariladi
+4. Qancha daromad qilish mumkin (oyiga oraliq bilan)
+5. Boshlash uchun 1-VA-ENG MUHIM qadam
 
-Tuzilishi:
-- Sarlavha (aniq kasb yoki yo‘l bilan)
-- Muammo
-- Bosqichma-bosqich yo‘l
-- Real misol
-- Kitob/manba
-- Savol yoki harakat
-
-Umumiy gaplar, hammaga ma’lum nasihatlar bo‘lmasin.
-
+Talablar:
+- Motivatsion shiorlar yo‘q
+- Amaliy va aniq yoz
+- 6–8 jumla
+- Oxirida savol: “Siz shu yo‘lni sinab ko‘rganmisiz?”
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
-    )
-
-    return response.choices[0].message.content.strip()
-
-
 # =====================================================
-# 2️⃣ RASM UCHUN QISQA MATN (AI)
+# 15:00 — KASB + YO‘L XARITASI + O‘ZBEKCHA YOUTUBE
 # =====================================================
-def generate_image_text(full_post: str) -> dict:
-    """
-    To‘liq postdan rasm uchun mos, qisqa variant chiqaradi.
-    """
-    prompt = f"""
-Quyidagi postdan RASM uchun mos, juda qisqa va lo‘nda variant tayyorla.
+def prompt_skill(topic: str) -> str:
+    return f"""
+Sof o‘zbek tilida yoz.
 
-Qoidalar:
-- Sof o‘zbek tilida
-- Sarlavha: 1 qisqa gap
-- Asosiy fikr: 2–3 qisqa gap
-- Savol: 1 gap
-- Ortiqcha gap bo‘lmasin
+Mavzu: {topic}
 
-Post:
-{full_post}
+Bu post BITTA real kasb haqida bo‘lsin.
 
-Natijani aynan shu formatda ber:
-Sarlavha:
-Asosiy:
-Savol:
+Majburiy tarkib:
+1. Kasb nomi
+2. Kimlar uchun mos
+3. 0 dan boshlash uchun 3 bosqich (1 → 2 → 3)
+4. O‘rganilishi kerak bo‘lgan ENG MUHIM ko‘nikma
+5. O‘rganish uchun YOUTUBE’dagi O‘ZBEK TILIDAGI darslar:
+   - 1–2 ta o‘zbekcha YouTube kanal yoki dars mavzusi
+   - Kanal yoki video nomi aniq yozilsin
+6. Qo‘shimcha o‘rganish uchun:
+   - 1 ta kitob YOKI bepul resurs
+7. 3–6 oyda qanday natijaga chiqish mumkin
+
+Talablar:
+- Umumiy gaplar yo‘q
+- Juda amaliy yoz
+- Reklama ohangi bo‘lmasin
+- Oxirida savol: “Siz shu kasbni o‘rganishni bugun boshlaysizmi?”
 """
+
+# =====================================================
+# 20:00 — MOTIVATSIYA (REAL SHAXS)
+# =====================================================
+def prompt_motivation(topic: str) -> str:
+    return f"""
+Sof o‘zbek tilida yoz.
+
+Mavzu: {topic}
+
+Bu post REAL inson misolida motivatsiya bo‘lsin.
+
+Majburiy tarkib:
+1. Inson kim bo‘lgan (oldin)
+2. Qanday qiyinchilik bo‘lgan
+3. Qaysi BITTA qaror burilish yasagan
+4. Hozirgi holati (natija)
+5. O‘quvchi uchun xulosa
+
+Talablar:
+- Hikoya tarzida yoz
+- Juda realistik bo‘lsin
+- Sun’iy motivatsiya yo‘q
+- Oxirida savol: “Siz qaysi qarorni kechiktiryapsiz?”
+"""
+
+# =====================================================
+# ASOSIY GENERATOR — VAQTGA QARAB TANLAYDI
+# =====================================================
+def generate_post(topic: str, post_type: str) -> str:
+    if post_type == "money":
+        prompt = prompt_money(topic)
+    elif post_type == "skill":
+        prompt = prompt_skill(topic)
+    elif post_type == "motivation":
+        prompt = prompt_motivation(topic)
+    else:
+        raise ValueError("Noto‘g‘ri post_type")
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -74,40 +103,4 @@ Savol:
         temperature=0.6
     )
 
-    raw_text = response.choices[0].message.content.strip()
-
-    result = {"title": "", "body": "", "question": ""}
-
-    for line in raw_text.splitlines():
-        line = line.strip()
-        if line.lower().startswith("sarlavha"):
-            result["title"] = line.split(":", 1)[1].strip()
-        elif line.lower().startswith("asosiy"):
-            result["body"] = line.split(":", 1)[1].strip()
-        elif line.lower().startswith("savol"):
-            result["question"] = line.split(":", 1)[1].strip()
-
-    return result
-
-
-# =====================================================
-# 3️⃣ RASMGA SIG‘DIRISH UCHUN MAJBURIY QISQARTIRISH
-# =====================================================
-def fit_text_for_image(text: dict) -> dict:
-    """
-    Matn juda uzun bo‘lsa, rasm formatiga majburan moslaydi.
-    """
-    MAX_TITLE = 90
-    MAX_BODY = 220
-    MAX_QUESTION = 90
-
-    def cut(t: str, limit: int) -> str:
-        if not t:
-            return ""
-        return t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0] + "…"
-
-    return {
-        "title": cut(text.get("title", ""), MAX_TITLE),
-        "body": cut(text.get("body", ""), MAX_BODY),
-        "question": cut(text.get("question", ""), MAX_QUESTION),
-    }
+    return response.choices[0].message.content.strip()

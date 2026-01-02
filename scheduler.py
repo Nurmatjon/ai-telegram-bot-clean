@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from datetime import time
+from datetime import time, datetime
 from telegram.ext import ContextTypes
 
 from ai_engine import generate_post
@@ -25,6 +25,16 @@ def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
+# ================= POST TYPE ANIQLASH =================
+def detect_post_type(hour: int) -> str:
+    if hour == 8:
+        return "money"
+    if hour == 15:
+        return "skill"
+    if hour == 20:
+        return "motivation"
+    return "money"  # fallback
+
 # ================= FORMAT =================
 def bold_title(text: str) -> str:
     lines = [l.strip() for l in text.split("\n") if l.strip()]
@@ -40,13 +50,20 @@ def limit_text(text: str, limit: int = 3500) -> str:
 # ================= POST JOB =================
 async def post_job(context: ContextTypes.DEFAULT_TYPE):
     bot = context.bot
-    logger.info("🕘 Matnli post yuborish boshlandi")
+
+    # ⏰ HOZIRGI VAQT (Railway TZ bilan)
+    now = datetime.now()
+    hour = now.hour
+
+    post_type = detect_post_type(hour)
+    logger.info(f"🕘 Post turi: {post_type} ({hour}:00)")
 
     state = load_state()
     index = state.get("day", 0)
 
     topic = get_topic(index)
-    post = generate_post(topic)
+    post = generate_post(topic, post_type=post_type)
+
     post = bold_title(post)
     post = limit_text(post)
 
@@ -56,7 +73,7 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-    # 🔁 HAR POSTDA NAVBATDAGI MAVZU
+    # 🔁 HAR POSTDA KEYINGI MAVZU
     state["day"] = index + 1
     save_state(state)
 
@@ -65,9 +82,6 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
 # ================= JOB QUEUE =================
 def setup_scheduler(application):
     jq = application.job_queue
-
-    # 🔴 TEST UCHUN — 30 SONIYADA 1 MARTA
-    jq.run_once(post_job, when=30)
 
     # 🟢 KUNIGA 3 MARTA
     jq.run_daily(
@@ -88,4 +102,4 @@ def setup_scheduler(application):
         name="post_20"
     )
 
-    logger.info("⏰ JobQueue scheduler ulandi (08:00, 15:00, 20:00)")
+    logger.info("⏰ JobQueue scheduler ulandi (08:00 / 15:00 / 20:00)")
