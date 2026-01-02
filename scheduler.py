@@ -1,8 +1,8 @@
 import json
 import os
+import asyncio
 import logging
-from datetime import time
-from telegram.ext import ContextTypes
+from datetime import datetime
 
 from ai_engine import generate_post
 from content_logic import get_topic
@@ -14,10 +14,16 @@ logger = logging.getLogger(__name__)
 STATE_FILE = "data/state.json"
 SCHEDULE_FILE = "data/schedule.json"
 
+DEFAULT_SCHEDULE = {
+    "money": "08:00",
+    "skill": "15:00",
+    "motivation": "20:00",
+}
+
 # ================= STATE =================
 def load_state():
     if not os.path.exists(STATE_FILE):
-        return {"day": 0, "enabled": True}
+        return {"day": 0, "enabled": True, "last_sent": {}}
     with open(STATE_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -28,77 +34,41 @@ def save_state(state):
 
 # ================= SCHEDULE =================
 def load_schedule():
-    """
-    schedule.json dan vaqtlarni o‘qiydi.
-    Agar fayl yo‘q bo‘lsa — default vaqtlar.
-    """
     if not os.path.exists(SCHEDULE_FILE):
-        return {
-            "money": time(8, 0),
-            "skill": time(15, 0),
-            "motivation": time(20, 0),
-        }
-
+        return DEFAULT_SCHEDULE
     with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
-        raw = json.load(f)
-
-    result = {}
-    for key, value in raw.items():
-        h, m = map(int, value.split(":"))
-        result[key] = time(hour=h, minute=m)
-
-    return result
+        return json.load(f)
 
 # ================= FORMAT =================
 def format_post_text(text: str) -> str:
-    """
-    - Asosiy sarlavha qalin
-    - #### -> !
-    - ! dan keyingi sarlavha qalin
-    - Har abzatsdan keyin 1 bo‘sh qator
-    """
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return text
 
-    formatted = []
-    formatted.append(f"*{lines[0]}*")
-    formatted.append("")
+    out = [f"*{lines[0]}*", ""]
 
     for line in lines[1:]:
         if line.startswith("####"):
             title = line.replace("####", "").strip()
-            formatted.append(f"! *{title}*")
-            formatted.append("")
+            out.append(f"! *{title}*")
+            out.append("")
         else:
-            formatted.append(line)
-            formatted.append("")
+            out.append(line)
+            out.append("")
 
-    return "\n".join(formatted).strip()
+    return "\n".join(out).strip()
 
-def limit_text(text: str, limit: int = 3500) -> str:
-    if len(text) <= limit:
-        return text
-    return text[:limit].rsplit(" ", 1)[0] + "…"
-
-# ================= POST JOB =================
-async def post_job(context: ContextTypes.DEFAULT_TYPE):
-    bot = context.bot
-    post_type = context.job.data  # money / skill / motivation
-
+# ================= POST =================
+async def send_post(bot, post_type: str):
     state = load_state()
     if not state.get("enabled", True):
-        logger.info("⏸ Avto postlar o‘chiq")
         return
-
-    logger.info(f"🕘 Post turi: {post_type}")
 
     index = state.get("day", 0)
     topic = get_topic(index)
 
-    raw_post = generate_post(topic, post_type=post_type)
-    post = format_post_text(raw_post)
-    post = limit_text(post)
+    raw = generate_post(topic, post_type=post_type)
+    post = format_post_text(raw)
 
     await bot.send_message(
         chat_id=CHANNEL_ID,
@@ -107,45 +77,29 @@ async def post_job(context: ContextTypes.DEFAULT_TYPE):
     )
 
     state["day"] = index + 1
+    state.setdefault("last_sent", {})[post_type] = datetime.now().strftime("%Y-%m-%d")
     save_state(state)
 
-    logger.info("✅ Post yuborildi")
+    logger.info(f"✅ {post_type} posti yuborildi")
 
-# ================= JOB QUEUE =================
-def setup_scheduler(application):
-    jq = application.job_queue
+# ================= MAIN LOOP =================
+async def scheduler_loop(bot):
+    logger.info("⏰ Custom scheduler ishga tushdi")
 
-    # ❌ ESKI JOBLARNI TO‘LIQ O‘CHIRISH
-    for job in jq.jobs():
-        job.schedule_removal()
+    while True:
+        try:
+            now = datetime.now().strftime("%H:%M")
+            today = datetime.now().strftime("%Y-%m-%d")
 
-    # ✅ YANGI VAQTLARNI O‘QISH
-    schedule = load_schedule()
+            schedule = load_schedule()
+            state = load_state()
+            last_sent = state.get("last_sent", {})
 
-    jq.run_daily(
-        post_job,
-        time=schedule["money"],
-        data="money",
-        name="post_money"
-    )
+            for post_type, post_time in schedule.items():
+                if now == post_time and last_sent.get(post_type) != today:
+                    await send_post(bot, post_type)
 
-    jq.run_daily(
-        post_job,
-        time=schedule["skill"],
-        data="skill",
-        name="post_skill"
-    )
+        except Exception as e:
+            logger.error(f"SCHEDULER ERROR: {e}")
 
-    jq.run_daily(
-        post_job,
-        time=schedule["motivation"],
-        data="motivation",
-        name="post_motivation"
-    )
-
-    logger.info(
-        "⏰ Scheduler yangilandi: "
-        f"money={schedule['money']}, "
-        f"skill={schedule['skill']}, "
-        f"motivation={schedule['motivation']}"
-    )
+        await asyncio.sleep(30)  # har 30 soniyada tekshiradi

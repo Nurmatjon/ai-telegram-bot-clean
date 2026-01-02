@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import asyncio
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -14,8 +15,8 @@ from telegram.ext import (
 )
 
 from scheduler import (
-    setup_scheduler,
-    post_job,
+    scheduler_loop,
+    send_post,
     load_state,
     save_state,
 )
@@ -30,7 +31,6 @@ logger = logging.getLogger(__name__)
 # ================= ENV =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
-
 SCHEDULE_FILE = "data/schedule.json"
 
 if not BOT_TOKEN:
@@ -58,7 +58,7 @@ def admin_keyboard():
 
 # ================= COMMANDS =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Bot ishlayapti.")
+    await update.message.reply_text("👋 Bot ishlayapti (custom scheduler).")
 
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -83,8 +83,7 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("post_"):
         post_type = data.replace("post_", "")
         await query.message.reply_text(f"📤 {post_type} posti yuborilmoqda...")
-        context.job.data = post_type
-        await post_job(context)
+        await send_post(context.bot, post_type)
 
     # 🔹 Avto postni to‘xtatish
     elif data == "pause":
@@ -103,17 +102,17 @@ async def admin_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         status = "YOQILGAN ✅" if state.get("enabled", True) else "O‘CHIQ ⛔"
         await query.message.reply_text(f"📊 Avto post holati: {status}")
 
-    # 🔹 Vaqtni o‘zgartirish yo‘riqnomasi
+    # 🔹 Yo‘riqnoma
     elif data == "set_time":
         await query.message.reply_text(
             "⏰ Post vaqtini o‘zgartirish:\n\n"
             "/set_time money 09:00\n"
             "/set_time skill 16:00\n"
             "/set_time motivation 21:00\n\n"
-            "⚠️ So‘ng Railway → Restart qiling"
+            "♻️ Darhol kuchga kiradi (restart shart emas)"
         )
 
-# ================= SET TIME COMMAND =================
+# ================= SET TIME =================
 async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
         return
@@ -127,7 +126,7 @@ async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text(
             "❌ Noto‘g‘ri format.\n\n"
-            "To‘g‘ri ko‘rinish:\n"
+            "To‘g‘ri:\n"
             "/set_time skill 16:30"
         )
         return
@@ -145,13 +144,13 @@ async def set_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"✅ `{post_type}` posti vaqti `{new_time}` ga o‘zgartirildi.\n"
-        f"🔁 Railway → Restart qiling",
+        f"♻️ Darhol kuchga kirdi",
         parse_mode="Markdown"
     )
 
 # ================= MAIN =================
 def main():
-    logger.info("🚀 Bot ishga tushyapti")
+    logger.info("🚀 Bot ishga tushyapti (custom scheduler)")
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -160,8 +159,10 @@ def main():
     app.add_handler(CommandHandler("set_time", set_time))
     app.add_handler(CallbackQueryHandler(admin_callback))
 
-    setup_scheduler(app)
-    logger.info("⏰ Scheduler ishga tushdi")
+    # 🔥 CUSTOM SCHEDULER ISHGA TUSHADI
+    asyncio.create_task(scheduler_loop(app.bot))
+
+    logger.info("⏰ Custom scheduler ishga tushdi")
 
     app.run_polling(drop_pending_updates=True)
 
